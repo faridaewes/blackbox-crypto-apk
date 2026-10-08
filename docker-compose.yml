@@ -1,0 +1,60 @@
+# Jalankan:  npm run setup   (membuat .env)   lalu   docker compose up -d --build
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: blackbox
+      POSTGRES_USER: blackbox
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Jalankan 'npm run setup' dulu agar .env terisi}
+    volumes:
+      - blackbox_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U blackbox -d blackbox"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  app:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file: .env
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://blackbox:${POSTGRES_PASSWORD}@db:5432/blackbox
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "3000:3000"
+    volumes:
+      - blackbox_kyc:/app/private-kyc
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+      start_period: 40s
+
+  # Mesin paper trading: memindai pasar, meminta keputusan AI, menjalankan risk gate dan mensimulasikan fill.
+  worker:
+    build: .
+    restart: unless-stopped
+    command: ["npx", "tsx", "src/worker/paper-engine.ts"]
+    depends_on:
+      app:
+        condition: service_healthy
+    env_file: .env
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://blackbox:${POSTGRES_PASSWORD}@db:5432/blackbox
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+volumes:
+  blackbox_kyc:
+  blackbox_pg:

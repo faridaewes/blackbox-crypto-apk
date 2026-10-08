@@ -1,0 +1,56 @@
+{
+  "name": "blackbox-crypto",
+  "version": "6.4.2",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "prisma generate && next build",
+    "start": "next start",
+    "seed": "tsx prisma/seed.ts",
+    "worker": "tsx src/worker/paper-engine.ts",
+    "typecheck": "tsc --noEmit",
+    "setup": "node scripts/setup.mjs",
+    "test": "node --experimental-strip-types --import ./tests/helpers/loader.mjs --test tests/*.test.mjs",
+    "create-admin": "tsx scripts/create-admin.ts",
+    "certify-exchange": "tsx scripts/certify-exchange.ts",
+    "reconcile": "tsx src/worker/reconciliation.ts",
+    "daily-report": "tsx src/worker/daily-report.ts",
+    "validate": "prisma format --check && prisma validate && npm test",
+    "start:all": "node scripts/run-production.mjs"
+  },
+  "dependencies": {
+    "next": "15.0.0",
+    "react": "19.0.0",
+    "react-dom": "19.0.0",
+    "@prisma/client": "6.0.0",
+    "bcryptjs": "3.0.0",
+    "jose": "6.0.0",
+    "zod": "4.0.0",
+    "xlsx": "0.18.5",
+    "pdfkit": "0.16.0",
+    "date-fns": "4.1.0",
+    "ccxt": "4.5.0",
+    "nodemailer": "7.0.6",
+    "prisma": "6.0.0",
+    "tsx": "4.0.0",
+    "@phantom/browser-sdk": "2.0.3",
+    "@walletconnect/universal-provider": "2.25.0",
+    "viem": "2.57.3",
+    "tweetnacl": "1.0.3",
+    "bs58": "6.0.0",
+    "qrcode": "1.5.4",
+    "@solana/web3.js": "1.99.0"
+  },
+  "devDependencies": {
+    "typescript": "5.0.0",
+    "@types/node": "22.0.0",
+    "@types/react": "19.0.0",
+    "@types/react-dom": "19.0.0",
+    "@types/pdfkit": "0.13.5",
+    "@types/tweetnacl": "1.0.6",
+    "@types/qrcode": "1.5.6"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
