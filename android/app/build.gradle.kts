@@ -24,6 +24,7 @@ android {
         targetSdk = 35
         versionCode = 642
         versionName = "6.4.2"
+    buildConfigField("String", "DEFAULT_API_BASE_URL", "\"$blackboxApiBaseUrl\"")
     }
 
     signingConfigs {
@@ -57,7 +58,6 @@ android {
         buildConfig = true
     }
 
-    buildConfigField("String", "DEFAULT_API_BASE_URL", "\"$blackboxApiBaseUrl\"")
 
 }
 
