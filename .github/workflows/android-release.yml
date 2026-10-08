@@ -68,19 +68,42 @@ jobs:
           echo "Production configuration detected."
 
       - name: Set up JDK 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: "17"
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Install Android SDK 35
+      - name: Configure Android SDK
+        shell: bash
         run: |
-          sdkmanager "platform-tools" \
+          set -euo pipefail
+
+          export ANDROID_SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
+          export ANDROID_HOME="$ANDROID_SDK_ROOT"
+
+          echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT" >> "$GITHUB_ENV"
+          echo "ANDROID_HOME=$ANDROID_SDK_ROOT" >> "$GITHUB_ENV"
+
+          SDKMANAGER="$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
+
+          if [ ! -x "$SDKMANAGER" ]; then
+            echo "ERROR: sdkmanager not found at:"
+            echo "$SDKMANAGER"
+            find "$ANDROID_SDK_ROOT" -maxdepth 5 -type f -name sdkmanager -print || true
+            exit 1
+          fi
+
+          echo "Using sdkmanager:"
+          "$SDKMANAGER" --version
+
+          yes | "$SDKMANAGER" --licenses >/dev/null 2>&1 || true
+
+          "$SDKMANAGER" \
+            "platform-tools" \
             "platforms;android-35" \
             "build-tools;35.0.0"
+
+          echo "Android SDK 35 configured successfully."
 
       - name: Set up Gradle 8.11.1
         uses: gradle/actions/setup-gradle@v4
@@ -91,9 +114,12 @@ jobs:
       - name: Generate Gradle Wrapper
         working-directory: android
         run: |
+          set -euo pipefail
+
           gradle wrapper \
             --gradle-version 8.11.1 \
             --distribution-type bin
+
           chmod +x gradlew
 
       - name: Restore release keystore
@@ -108,6 +134,8 @@ jobs:
             > "$RUNNER_TEMP/blackbox-release.jks"
 
           test -s "$RUNNER_TEMP/blackbox-release.jks"
+
+          echo "Release keystore restored."
 
       - name: Build signed release APK
         working-directory: android
@@ -138,7 +166,6 @@ jobs:
             | tee "BLACKBOX-Crypto-Android.apk.sha256"
 
           ls -lh "$FINAL_APK"
-          cat "BLACKBOX-Crypto-Android.apk.sha256"
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
